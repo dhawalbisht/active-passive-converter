@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ArrowRightLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowRightLeft, Command } from 'lucide-react';
 
 export default function VoiceConverter() {
     const [activeText, setActiveText] = useState('');
@@ -7,16 +7,14 @@ export default function VoiceConverter() {
     const [loading, setLoading] = useState(false);
 
     const detectVoiceType = (text) => {
-        // Simple heuristics to detect voice type
         const passiveIndicators = [
-            /\bis\s+\w*ed\b/i,     // "is completed"
-            /\bwas\s+\w*ed\b/i,    // "was written"
-            /\bare\s+\w*ed\b/i,    // "are made"
-            /\bwere\s+\w*ed\b/i,   // "were built"
-            /\bbeen\s+\w*ed\b/i,   // "been taken"
-            /\bby\s+\w+$/i,        // ends with "by someone"
+            /\bis\s+\w*ed\b/i,
+            /\bwas\s+\w*ed\b/i,
+            /\bare\s+\w*ed\b/i,
+            /\bwere\s+\w*ed\b/i,
+            /\bbeen\s+\w*ed\b/i,
+            /\bby\s+\w+$/i,
         ];
-
         return passiveIndicators.some(pattern => pattern.test(text)) ? 'passive' : 'active';
     };
 
@@ -29,7 +27,6 @@ export default function VoiceConverter() {
 
         setLoading(true);
         try {
-            // prod url
             const response = await fetch('https://backend-active.onrender.com/api/convert', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -50,7 +47,6 @@ export default function VoiceConverter() {
 
             const data = JSON.parse(text);
 
-            // Update the opposite field
             if (direction === 'active_to_passive') {
                 setPassiveText(data.converted_text);
             } else {
@@ -75,78 +71,111 @@ export default function VoiceConverter() {
 
     const hasText = activeText.trim() || passiveText.trim();
 
+    useEffect(() => {
+        const handleKeyPress = (e) => {
+            if (e.key === 'Enter' && e.ctrlKey && hasText && !loading) {
+                e.preventDefault();
+                convert();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyPress);
+        return () => document.removeEventListener('keydown', handleKeyPress);
+    }, [hasText, loading, activeText, passiveText]);
+
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-6">
             <div className="w-full max-w-6xl">
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">Active Passive Voice Converter</h1>
-                    <p className="text-gray-600">Convert between active and passive voice automatically</p>
+                {/* Header */}
+                <div className="text-center mb-12">
+                    <h1 className="text-4xl font-light text-slate-800 mb-3 tracking-tight">
+                        Voice Converter
+                    </h1>
+                    <p className="text-slate-600 text-lg font-light">
+                        Transform between active and passive voice
+                    </p>
                 </div>
 
-                <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                    <div className="grid md:grid-cols-2 gap-0">
-                        {/* Active Voice Side */}
-                        <div className="p-6 border-r border-gray-200">
-                            <div className="flex items-center justify-center mb-4">
-                                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                {/* Main Converter */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden">
+                    <div className="grid md:grid-cols-2">
+                        {/* Active Voice */}
+                        <div className="p-8 border-r border-slate-100/60">
+                            <div className="mb-6">
+                                <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-medium">
                                     Active Voice
-                                </span>
+                                </div>
                             </div>
 
                             <textarea
                                 value={activeText}
                                 onChange={(e) => setActiveText(e.target.value)}
-                                placeholder="Type your sentence in active voice..."
-                                className="w-full h-64 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                                placeholder="Enter your sentence in active voice..."
+                                className="w-full h-80 p-0 border-0 resize-none focus:ring-0 focus:outline-none text-slate-900 placeholder-slate-400 text-lg leading-relaxed bg-transparent"
+                                style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
                             />
                         </div>
 
-                        {/* Passive Voice Side */}
-                        <div className="p-6">
-                            <div className="flex items-center justify-center mb-4">
-                                <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                        {/* Passive Voice */}
+                        <div className="p-8">
+                            <div className="mb-6">
+                                <div className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-sm font-medium">
                                     Passive Voice
-                                </span>
+                                </div>
                             </div>
 
                             <textarea
                                 value={passiveText}
                                 onChange={(e) => setPassiveText(e.target.value)}
-                                placeholder="Type your sentence in passive voice..."
-                                className="w-full h-64 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-lg"
+                                placeholder="Enter your sentence in passive voice..."
+                                className="w-full h-80 p-0 border-0 resize-none focus:ring-0 focus:outline-none text-slate-900 placeholder-slate-400 text-lg leading-relaxed bg-transparent"
+                                style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
                             />
                         </div>
                     </div>
 
-                    {/* Control Buttons */}
-                    <div className="bg-gray-50 p-4 border-t">
-                        <div className="flex items-center justify-center gap-4">
-                            <button
-                                onClick={convert}
-                                disabled={!hasText || loading}
-                                className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 text-white px-6 py-2 rounded-lg flex items-center gap-2 font-medium"
-                            >
-                                {loading ? (
-                                    <ArrowRightLeft className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <ArrowRightLeft className="w-4 h-4" />
-                                )}
-                                {loading ? 'Converting...' : 'Convert'}
-                            </button>
+                    {/* Controls */}
+                    <div className="px-8 py-6 bg-slate-50/50 border-t border-slate-100/60">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm text-slate-500">
+                                <Command className="w-4 h-4" />
+                                <span>⌘ + Enter to convert</span>
+                            </div>
 
-                            <button
-                                onClick={clearAll}
-                                disabled={!hasText}
-                                className="bg-gray-500 hover:bg-gray-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg"
-                            >
-                                Clear
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={clearAll}
+                                    disabled={!hasText}
+                                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 disabled:text-slate-400 transition-colors"
+                                >
+                                    Clear
+                                </button>
+
+                                <button
+                                    onClick={convert}
+                                    disabled={!hasText || loading}
+                                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <ArrowRightLeft className="w-4 h-4 animate-spin" />
+                                            Converting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ArrowRightLeft className="w-4 h-4" />
+                                            Convert
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="text-center mt-4 text-sm text-gray-500">
-                    Type in either box and click Convert - the app will automatically detect the voice type
+                {/* Footer */}
+                <div className="text-center mt-8 text-slate-500 text-sm">
+                    AI-powered voice conversion tool
                 </div>
             </div>
         </div>
