@@ -29,10 +29,13 @@ export default function VoiceConverter() {
 
         setLoading(true);
         try {
-            const response = await fetch('https://backend-active.onrender.com/convert', {
+            const response = await fetch('https://backend-active.onrender.com/api/convert', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: sourceText, direction })
+                body: JSON.stringify({
+                    text: sourceText,
+                    direction: direction
+                })
             });
 
             if (!response.ok) {
