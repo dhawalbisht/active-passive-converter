@@ -5,12 +5,5 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
   ],
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
-    },
-  },
+  // Remove the server proxy completely
 })
