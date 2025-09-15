@@ -1,26 +1,22 @@
 import React, { useState } from 'react';
 import { ArrowRightLeft } from 'lucide-react';
 
-// Determine API base depending on environment
-const API_BASE =
-    import.meta.env.MODE === "development"
-        ? "/api" // Vite dev proxy
-        : "https://backend-active.onrender.com"; // production backend
-
 export default function VoiceConverter() {
     const [activeText, setActiveText] = useState('');
     const [passiveText, setPassiveText] = useState('');
     const [loading, setLoading] = useState(false);
 
     const detectVoiceType = (text) => {
+        // Simple heuristics to detect voice type
         const passiveIndicators = [
-            /\bis\s+\w*ed\b/i,
-            /\bwas\s+\w*ed\b/i,
-            /\bare\s+\w*ed\b/i,
-            /\bwere\s+\w*ed\b/i,
-            /\bbeen\s+\w*ed\b/i,
-            /\bby\s+\w+$/i,
+            /\bis\s+\w*ed\b/i,     // "is completed"
+            /\bwas\s+\w*ed\b/i,    // "was written"
+            /\bare\s+\w*ed\b/i,    // "are made"
+            /\bwere\s+\w*ed\b/i,   // "were built"
+            /\bbeen\s+\w*ed\b/i,   // "been taken"
+            /\bby\s+\w+$/i,        // ends with "by someone"
         ];
+
         return passiveIndicators.some(pattern => pattern.test(text)) ? 'passive' : 'active';
     };
 
@@ -33,7 +29,7 @@ export default function VoiceConverter() {
 
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE}/convert`, {
+            const response = await fetch('https://backend-active.onrender.com/convert', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: sourceText, direction })
@@ -43,8 +39,14 @@ export default function VoiceConverter() {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const data = await response.json();
+            const text = await response.text();
+            if (!text) {
+                throw new Error('Empty response');
+            }
 
+            const data = JSON.parse(text);
+
+            // Update the opposite field
             if (direction === 'active_to_passive') {
                 setPassiveText(data.converted_text);
             } else {
@@ -79,10 +81,14 @@ export default function VoiceConverter() {
 
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden">
                     <div className="grid md:grid-cols-2 gap-0">
+                        {/* Active Voice Side */}
                         <div className="p-6 border-r border-gray-200">
                             <div className="flex items-center justify-center mb-4">
-                                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">Active Voice</span>
+                                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                                    Active Voice
+                                </span>
                             </div>
+
                             <textarea
                                 value={activeText}
                                 onChange={(e) => setActiveText(e.target.value)}
@@ -91,10 +97,14 @@ export default function VoiceConverter() {
                             />
                         </div>
 
+                        {/* Passive Voice Side */}
                         <div className="p-6">
                             <div className="flex items-center justify-center mb-4">
-                                <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">Passive Voice</span>
+                                <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                                    Passive Voice
+                                </span>
                             </div>
+
                             <textarea
                                 value={passiveText}
                                 onChange={(e) => setPassiveText(e.target.value)}
@@ -104,6 +114,7 @@ export default function VoiceConverter() {
                         </div>
                     </div>
 
+                    {/* Control Buttons */}
                     <div className="bg-gray-50 p-4 border-t">
                         <div className="flex items-center justify-center gap-4">
                             <button
